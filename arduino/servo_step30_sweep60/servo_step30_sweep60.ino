@@ -38,32 +38,48 @@ void rotateDegrees(int degrees, bool clockwise) {
   delay(duration);
   rotServo.writeMicroseconds(STOP_US);
   currentPos += clockwise ? degrees : -degrees;
+
+  Serial.print("[Servo 1] Tuyok ");
+  Serial.print(clockwise ? "CW " : "CCW ");
+  Serial.print(degrees);
+  Serial.print(" deg -> position: ");
+  Serial.print(currentPos);
+  Serial.println(" deg");
 }
 
 void returnHome() {
   if (currentPos == 0) return;
+  Serial.println("[Servo 1] Mobalik sa original position (0 deg)...");
   int back = abs(currentPos);
   bool cw = currentPos < 0;        // kung naa sa +, mo-CCW pabalik
   rotateDegrees(back, cw);
   currentPos = 0;
+  Serial.println("[Servo 1] Naa na sa 0 deg");
 }
 
 // Servo 2: 0° -> 60° -> 0°
 void sweepArm() {
+  Serial.println("[Servo 2] Mo-tuyok 0 -> 60 deg");
   for (int angle = ARM_MIN; angle <= ARM_MAX; angle++) {
     armServo.write(angle);
     delay(ARM_STEP_MS);
   }
+  Serial.println("[Servo 2] Naa na sa 60 deg");
   delay(ARM_HOLD_MS);
 
+  Serial.println("[Servo 2] Mobalik 60 -> 0 deg");
   for (int angle = ARM_MAX; angle >= ARM_MIN; angle--) {
     armServo.write(angle);
     delay(ARM_STEP_MS);
   }
+  Serial.println("[Servo 2] Naa na sa 0 deg");
   delay(ARM_HOLD_MS);
 }
 
 void setup() {
+  Serial.begin(9600);
+  Serial.println("=== Duha ka Servo: Sugod ===");
+
   rotServo.attach(ROT_PIN, 500, 2400);
   rotServo.writeMicroseconds(STOP_US);
 
@@ -71,9 +87,18 @@ void setup() {
   armServo.write(ARM_MIN);
 
   delay(1000);                     // hulat sa mga servo nga mo-undang
+  Serial.println("Servo 1: STOP | Servo 2: 0 deg");
 }
 
+int cycleCount = 0;
+
 void loop() {
+  cycleCount++;
+  Serial.println();
+  Serial.print("===== CYCLE ");
+  Serial.print(cycleCount);
+  Serial.println(" =====");
+
   // Servo 1 mo-tuyok matag 30° (30, 60, 90, 120, 150, 180).
   // Human sa matag 30°, ang Servo 2 mo-0° -> 60° -> 0°.
   while (currentPos < MAX_DEG) {
@@ -84,5 +109,8 @@ void loop() {
 
   // Balik sa original position
   returnHome();
+  Serial.print("Hulat ");
+  Serial.print(HOME_WAIT / 1000);
+  Serial.println(" seconds sa wala pa mo-usab...");
   delay(HOME_WAIT);
 }
