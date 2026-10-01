@@ -21,6 +21,7 @@ float msPerDegree = 5.0;           // oras kada degree. I-calibrate ni!
 // === SETTINGS (Servo 1) ===
 const int STEP_DEG  = 30;          // matag tuyok kay 30 degrees
 const int MAX_DEG   = 180;         // hangtod diin mo-tuyok bag-o mobalik
+const int SETTLE_MS = 300;         // hulat aron hingpit nga mo-undang ang Servo 1
 const int PAUSE_MS  = 1000;        // paghulat tali sa matag step
 const int HOME_WAIT = 3000;        // paghulat human mobalik, sa wala pa ulitin
 
@@ -37,6 +38,7 @@ void rotateDegrees(int degrees, bool clockwise) {
   rotServo.writeMicroseconds(clockwise ? CW_US : CCW_US);
   delay(duration);
   rotServo.writeMicroseconds(STOP_US);
+  delay(SETTLE_MS);                // siguroha nga hunong na gyud
   currentPos += clockwise ? degrees : -degrees;
 
   Serial.print("[Servo 1] Tuyok ");
@@ -100,11 +102,20 @@ void loop() {
   Serial.println(" =====");
 
   // Servo 1 mo-tuyok matag 30° (30, 60, 90, 120, 150, 180).
-  // Human sa matag 30°, ang Servo 2 mo-0° -> 60° -> 0°.
+  // Ang Servo 2 mo-tuyok LANG kung naa na ug hunong na ang Servo 1 sa insakto nga degree.
   while (currentPos < MAX_DEG) {
-    rotateDegrees(STEP_DEG, true);
-    delay(PAUSE_MS);
-    sweepArm();
+    int target = currentPos + STEP_DEG;
+
+    rotateDegrees(STEP_DEG, true);           // 1) Servo 1 mo-tuyok og 30°
+
+    if (currentPos == target) {              // 2) naa na sa insakto nga degree?
+      Serial.print(">> Servo 1 HUNONG sa ");
+      Serial.print(currentPos);
+      Serial.println(" deg - Servo 2 na ang mo-tuyok");
+      sweepArm();                            // 3) dayun ang Servo 2: 0 -> 60 -> 0
+    }
+
+    delay(PAUSE_MS);                         // 4) hulat sa wala pa ang sunod nga 30°
   }
 
   // Balik sa original position
